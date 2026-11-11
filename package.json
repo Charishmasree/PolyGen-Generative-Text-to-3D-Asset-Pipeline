@@ -1,0 +1,25 @@
+{
+  "name": "polygen-frontend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "postinstall": "node -e \"try { const fs=require('fs'), p='./node_modules/rollup/dist/native.js'; if(fs.existsSync(p)){ let c=fs.readFileSync(p,'utf8'); if(!c.includes('@rollup/wasm-node/dist/native.js')){ c=c.replace('if (error instanceof Error && error.code === \\'ERR_DLOPEN_FAILED\\') {\\n\\t\\t\\tthrow error;\\n\\t\\t}', 'if (error instanceof Error && error.code === \\'ERR_DLOPEN_FAILED\\') {\\n\\t\\t\\ttry { return require(\\'@rollup/wasm-node/dist/native.js\\'); } catch(e) { throw error; }\\n\\t\\t}'); fs.writeFileSync(p, c, 'utf8'); } } } catch(e){}\""
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "three": "^0.164.1",
+    "@react-three/fiber": "^8.16.8",
+    "@react-three/drei": "^9.106.0",
+    "lucide-react": "^0.378.0",
+    "@rollup/wasm-node": "^4.68.2"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.1",
+    "vite": "^5.2.11"
+  }
+}
