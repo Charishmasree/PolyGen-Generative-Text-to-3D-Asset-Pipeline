@@ -1088,3 +1088,6 @@ if __name__ == "__main__":
         res = generate_3d_model(tp)
         print(f"Generated: '{tp}' -> {res['filename']} ({res['metadata']['vertex_count']} verts, {res['metadata']['face_count']} faces) in {res['metadata']['generation_time_ms']}ms")
 
+
+Implement text-to-3D mesh generation and OBJ exporter
+
