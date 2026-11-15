@@ -134,3 +134,77 @@ if __name__ == "__main__":
     print("Overall Status:",
           "SUCCESS" if vertex_check["valid"]
           and face_check["valid"] else "FAILED")
+
+
+
+
+
+
+
+
+
+
+"""
+PolyGen - 3D Mesh Validation
+Validates vertices and faces before OBJ export.
+"""
+
+import math
+
+
+def validate_mesh(vertices, faces):
+    """Check whether mesh vertices and faces are valid."""
+
+    errors = []
+
+    if not vertices:
+        errors.append("Mesh contains no vertices.")
+
+    if not faces:
+        errors.append("Mesh contains no faces.")
+
+    for index, vertex in enumerate(vertices):
+        if len(vertex) != 3:
+            errors.append(f"Vertex {index} must contain exactly 3 values.")
+            continue
+
+        if not all(math.isfinite(float(value)) for value in vertex):
+            errors.append(f"Vertex {index} contains an invalid value.")
+
+    for index, face in enumerate(faces):
+        if len(face) < 3:
+            errors.append(f"Face {index} must contain at least 3 vertices.")
+            continue
+
+        if len(set(face)) != len(face):
+            errors.append(f"Face {index} contains duplicate vertex indices.")
+
+        for vertex_index in face:
+            if not isinstance(vertex_index, int):
+                errors.append(f"Face {index} has a non-integer index.")
+            elif vertex_index < 0 or vertex_index >= len(vertices):
+                errors.append(f"Face {index} has an out-of-range index.")
+
+    return {
+        "is_valid": len(errors) == 0,
+        "errors": errors,
+        "vertex_count": len(vertices),
+        "face_count": len(faces)
+    }
+
+
+if __name__ == "__main__":
+    sample_vertices = [
+        (0, 0, 0),
+        (1, 0, 0),
+        (1, 1, 0),
+        (0, 1, 0)
+    ]
+
+    sample_faces = [
+        (0, 1, 2, 3)
+    ]
+
+    result = validate_mesh(sample_vertices, sample_faces)
+    print("Mesh Validation Result:", result)
+
