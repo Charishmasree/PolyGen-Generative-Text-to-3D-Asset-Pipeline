@@ -19,9 +19,15 @@ import numpy as np
 # Configure logger
 logger = logging.getLogger("polygen.generator")
 
-# Output directory for generated models
-MODELS_DIR = Path(__file__).resolve().parent / "models"
+# Output directories matching PolyGen Week 2 structure: outputs/models, outputs/textures, outputs/processed
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+OUTPUTS_DIR = PROJECT_ROOT / "outputs"
+MODELS_DIR = OUTPUTS_DIR / "models"
 MODELS_DIR.mkdir(parents=True, exist_ok=True)
+
+# Also maintain root outputs and backend/models for backward compatibility
+BACKEND_MODELS_DIR = Path(__file__).resolve().parent / "models"
+BACKEND_MODELS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # =====================================================================
@@ -1054,12 +1060,27 @@ def generate_3d_model(
     generation_time_ms = round((time.time() - start_time) * 1000, 2)
     file_size_bytes = os.path.getsize(obj_filepath) if obj_filepath.exists() else 0
 
+    # Sync to root outputs and backend/models as well for maximum compatibility
+    import shutil
+    try:
+        if obj_filepath.exists():
+            shutil.copy2(obj_filepath, BACKEND_MODELS_DIR / obj_filename)
+            shutil.copy2(obj_filepath, OUTPUTS_DIR / obj_filename)
+        mtl_src = obj_filepath.with_suffix(".mtl")
+        if mtl_src.exists():
+            shutil.copy2(mtl_src, BACKEND_MODELS_DIR / mtl_src.name)
+            shutil.copy2(mtl_src, OUTPUTS_DIR / mtl_src.name)
+    except Exception:
+        pass
+
     return {
         "success": True,
         "model_id": model_id,
         "prompt": clean_prompt,
         "style": style,
         "filename": obj_filename,
+        "file_path": str(obj_filepath),
+        "output_directory": str(OUTPUTS_DIR),
         "model_url": f"/api/models/{obj_filename}",
         "download_url": f"/api/models/{obj_filename}?download=true",
         "file_size": file_size_bytes,
@@ -1087,102 +1108,4 @@ if __name__ == "__main__":
     for tp in test_prompts:
         res = generate_3d_model(tp)
         print(f"Generated: '{tp}' -> {res['filename']} ({res['metadata']['vertex_count']} verts, {res['metadata']['face_count']} faces) in {res['metadata']['generation_time_ms']}ms")
-
-
-"""
-PolyGen - OBJ Mesh Exporter
-Exports generated 3D mesh vertices and faces
-into Wavefront OBJ format.
-"""
-
-from pathlib import Path
-
-
-def export_obj(vertices, faces, output_path, object_name="PolyGen_Model"):
-    """
-    Export a 3D mesh into an OBJ file.
-
-    Args:
-        vertices: List of (x, y, z) coordinates.
-        faces: List of vertex index lists (1-based).
-        output_path: Destination OBJ file path.
-        object_name: Name of the 3D object.
-    """
-
-    if not vertices:
-        raise ValueError("Mesh must contain vertices.")
-
-    if not faces:
-        raise ValueError("Mesh must contain faces.")
-
-    for face in faces:
-        if len(face) < 3:
-            raise ValueError("Each face must have at least 3 vertices.")
-
-        for index in face:
-            if not isinstance(index, int) or index < 1 or index > len(vertices):
-                raise ValueError("Invalid vertex index in face.")
-
-    output_path = Path(output_path)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    with output_path.open("w", encoding="utf-8") as file:
-        file.write("# PolyGen Generated 3D Model\n")
-        file.write(f"o {object_name}\n\n")
-
-        # Write vertex coordinates
-        for vertex in vertices:
-            if len(vertex) != 3:
-                raise ValueError("Each vertex must contain x, y, z.")
-            x, y, z = vertex
-            file.write(f"v {x:.6f} {y:.6f} {z:.6f}\n")
-
-        file.write("\n")
-
-        # Write polygon faces
-        for face in faces:
-            file.write("f " + " ".join(map(str, face)) + "\n")
-
-    return str(output_path)
-
-
-def create_sample_mesh():
-    """Create a simple cube mesh for testing."""
-
-    vertices = [
-        (-1, -1, -1),
-        (1, -1, -1),
-        (1, 1, -1),
-        (-1, 1, -1),
-        (-1, -1, 1),
-        (1, -1, 1),
-        (1, 1, 1),
-        (-1, 1, 1)
-    ]
-
-    faces = [
-        [1, 2, 3, 4],
-        [5, 8, 7, 6],
-        [1, 5, 6, 2],
-        [4, 3, 7, 8],
-        [1, 4, 8, 5],
-        [2, 6, 7, 3]
-    ]
-
-    return vertices, faces
-
-
-if __name__ == "__main__":
-    vertices, faces = create_sample_mesh()
-
-    result = export_obj(
-        vertices,
-        faces,
-        "outputs/models/sample_cube.obj",
-        "PolyGen_Cube"
-    )
-
-    print("3D model exported successfully!")
-    print("Output file:", result)
-
 

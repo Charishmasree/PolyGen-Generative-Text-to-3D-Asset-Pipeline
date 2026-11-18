@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PolyGen - Output Links</title>
+  <title>PolyGen - Week 2 Output Links Launchpad</title>
   <style>
     :root {
       --bg: #0a0d14;
@@ -12,7 +12,9 @@
       --muted: #94a3b8;
       --accent: #6366f1;
       --accent-hover: #4f46e5;
+      --accent-cyan: #38bdf8;
       --border: rgba(255,255,255,0.08);
+      --success: #10b981;
     }
     body {
       margin: 0;
@@ -27,7 +29,7 @@
       box-sizing: border-box;
     }
     .container {
-      max-width: 650px;
+      max-width: 680px;
       width: 100%;
       background: var(--card-bg);
       border: 1px solid var(--border);
@@ -35,36 +37,54 @@
       padding: 32px;
       box-shadow: 0 20px 40px rgba(0,0,0,0.5);
     }
+    .badge-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
     .badge {
       display: inline-block;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
       padding: 4px 10px;
       border-radius: 999px;
       background: rgba(99,102,241,0.15);
       color: #818cf8;
       border: 1px solid rgba(99,102,241,0.3);
-      margin-bottom: 12px;
+    }
+    .badge.offline {
+      background: rgba(16,185,129,0.15);
+      color: #34d399;
+      border-color: rgba(16,185,129,0.3);
     }
     h1 {
       margin: 0 0 8px 0;
-      font-size: 28px;
+      font-size: 26px;
     }
     p {
       color: var(--muted);
       font-size: 14px;
-      margin-bottom: 28px;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+    .section-title {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      margin: 18px 0 10px 0;
+      font-weight: 600;
     }
     .links-grid {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
     }
     .link-card {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 16px 20px;
+      padding: 14px 18px;
       background: rgba(255,255,255,0.03);
       border: 1px solid var(--border);
       border-radius: 10px;
@@ -77,10 +97,17 @@
       border-color: rgba(99,102,241,0.4);
       transform: translateY(-2px);
     }
+    .link-card.offline-card:hover {
+      background: rgba(16,185,129,0.12);
+      border-color: rgba(16,185,129,0.4);
+    }
     .link-title {
       font-weight: 600;
-      font-size: 16px;
+      font-size: 15px;
       margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
     .link-desc {
       font-size: 12px;
@@ -91,15 +118,24 @@
       font-weight: bold;
       font-size: 18px;
     }
+    .offline-arrow {
+      color: #34d399;
+    }
+    .buttons-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 24px;
+    }
     .primary-btn {
       display: block;
-      margin-top: 24px;
       text-align: center;
-      padding: 14px;
+      padding: 13px;
       background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
       color: white;
       text-decoration: none;
       font-weight: 600;
+      font-size: 14px;
       border-radius: 10px;
       box-shadow: 0 4px 16px rgba(99,102,241,0.35);
       transition: all 0.2s ease;
@@ -108,50 +144,93 @@
       background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
       transform: translateY(-1px);
     }
+    .offline-btn {
+      display: block;
+      text-align: center;
+      padding: 13px;
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: white;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+      border-radius: 10px;
+      box-shadow: 0 4px 16px rgba(16,185,129,0.35);
+      transition: all 0.2s ease;
+    }
+    .offline-btn:hover {
+      background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+      transform: translateY(-1px);
+    }
+    .footer-note {
+      margin-top: 20px;
+      padding: 12px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+    .footer-note strong {
+      color: var(--text);
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="badge">PolyGen Project • Week 1</div>
+    <div class="badge-row">
+      <span class="badge">PolyGen • Week 2 Milestone</span>
+      <span class="badge offline">100% Offline Compatible</span>
+    </div>
     <h1>Output Access Launchpad</h1>
-    <p>Select any link below to open the PolyGen Text-to-3D pipeline in your browser:</p>
+    <p>Choose an option below to open the PolyGen 3D Asset Studio, whether you are connected to the internet or working 100% offline:</p>
 
+    <div class="section-title">🌐 Online Mode (When Connected to Internet / Dev Server)</div>
     <div class="links-grid">
       <a href="http://localhost:5173" class="link-card" target="_blank">
         <div>
-          <div class="link-title">🎮 3D Web Studio (Dashboard)</div>
-          <div class="link-desc">React + Three.js interactive 3D model viewer & prompt input</div>
+          <div class="link-title">🎮 3D Web Studio (Port 5173)</div>
+          <div class="link-desc">React 18 + Three.js interface with textured 3D viewer & preset prompts</div>
         </div>
         <div class="link-arrow">→</div>
       </a>
 
       <a href="http://localhost:8000/docs" class="link-card" target="_blank">
         <div>
-          <div class="link-title">📚 FastAPI Swagger Documentation</div>
-          <div class="link-desc">Interactive API explorer to test POST /api/generate directly</div>
-        </div>
-        <div class="link-arrow">→</div>
-      </a>
-
-      <a href="http://localhost:8000/api/health" class="link-card" target="_blank">
-        <div>
-          <div class="link-title">🩺 Backend Health Check</div>
-          <div class="link-desc">Verify server status, model counts, and active providers</div>
-        </div>
-        <div class="link-arrow">→</div>
-      </a>
-
-      <a href="http://localhost:8000/api/history" class="link-card" target="_blank">
-        <div>
-          <div class="link-title">🕒 Generation History</div>
-          <div class="link-desc">JSON listing of all generated Wavefront OBJ models</div>
+          <div class="link-title">📚 FastAPI Interactive Swagger Docs (Port 8000)</div>
+          <div class="link-desc">Test POST /api/generate-full-asset, texture generator & xatlas UV unwrapper</div>
         </div>
         <div class="link-arrow">→</div>
       </a>
     </div>
 
-    <a href="http://localhost:5173" class="primary-btn" target="_blank">Open PolyGen 3D Studio Now</a>
+    <div class="section-title">📴 100% Offline Mode (When Internet / Wi-Fi is OFF)</div>
+    <div class="links-grid">
+      <a href="http://127.0.0.1:8000" class="link-card offline-card" target="_blank">
+        <div>
+          <div class="link-title">⚡ Offline 3D Studio (Port 8000 Loopback)</div>
+          <div class="link-desc">FastAPI serves built React UI + 3D engine with zero internet connection</div>
+        </div>
+        <div class="link-arrow offline-arrow">→</div>
+      </a>
+
+      <a href="http://127.0.0.1:8000/api/health" class="link-card offline-card" target="_blank">
+        <div>
+          <div class="link-title">🩺 Offline System Diagnostics</div>
+          <div class="link-desc">View local xatlas status, model store count & procedural PBR engine</div>
+        </div>
+        <div class="link-arrow offline-arrow">→</div>
+      </a>
+    </div>
+
+    <div class="buttons-row">
+      <a href="http://localhost:5173" class="primary-btn" target="_blank">Open Online Studio (5173)</a>
+      <a href="http://127.0.0.1:8000" class="offline-btn" target="_blank">Open Offline Studio (8000)</a>
+    </div>
+
+    <div class="footer-note">
+      <strong>📁 Desktop Output Folder:</strong> All 3D models (`.obj`), materials (`.mtl`), and textures (`.png`) are automatically saved to <code>outputs/models/</code>, <code>outputs/textures/</code>, and <code>outputs/processed/</code> in your project on Desktop. Double-click <strong>open_outputs_folder.bat</strong> anytime to inspect them in Windows File Explorer!
+    </div>
   </div>
 </body>
 </html>
-

@@ -1,0 +1,11 @@
+# PolyGen Week 2 Material Definition
+# Processed Mesh: polygen_a_rusty_medieval_broadsw_eb67917b_processed.obj
+
+newmtl SwordMaterial
+Ka 0.2000 0.2000 0.2000
+Kd 0.8500 0.8500 0.8500
+Ks 0.3500 0.3500 0.3500
+Ns 60.0000
+d 1.0000
+illum 2
+map_Kd ../textures/test_polygen_a_rusty_medieval_broadsw_eb67917b_texture.png

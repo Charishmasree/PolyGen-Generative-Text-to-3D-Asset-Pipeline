@@ -19,10 +19,31 @@ import {
  * Loads and renders a Wavefront OBJ model with auto-centering,
  * bounding normalization, and dynamic materials.
  */
-function OBJModel({ url, materialMode, wireframe, onLoaded, onError }) {
+function OBJModel({ url, textureUrl, materialMode, wireframe, onLoaded, onError }) {
   const [object, setObject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState(null);
+  const [loadedTexture, setLoadedTexture] = useState(null);
+
+  // Load texture if textureUrl provided
+  useEffect(() => {
+    if (!textureUrl) {
+      setLoadedTexture(null);
+      return;
+    }
+    const texLoader = new THREE.TextureLoader();
+    texLoader.load(
+      textureUrl,
+      (tex) => {
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.wrapT = THREE.RepeatWrapping;
+        tex.colorSpace = THREE.SRGBColorSpace;
+        setLoadedTexture(tex);
+      },
+      undefined,
+      (err) => console.warn("Could not load texture:", err)
+    );
+  }, [textureUrl]);
 
   useEffect(() => {
     if (!url) {
@@ -122,12 +143,20 @@ function OBJModel({ url, materialMode, wireframe, onLoaded, onError }) {
     };
   }, [url]);
 
-  // Apply materials when materialMode or wireframe changes
+  // Apply materials when materialMode, wireframe, or loadedTexture changes
   useEffect(() => {
     if (!object) return;
 
     let mat;
-    if (materialMode === 'normal') {
+    if (materialMode === 'textured' && loadedTexture) {
+      mat = new THREE.MeshStandardMaterial({
+        map: loadedTexture,
+        metalness: 0.35,
+        roughness: 0.55,
+        wireframe,
+        flatShading: false,
+      });
+    } else if (materialMode === 'normal') {
       mat = new THREE.MeshNormalMaterial({ wireframe });
     } else if (materialMode === 'metallic') {
       mat = new THREE.MeshStandardMaterial({
@@ -161,7 +190,7 @@ function OBJModel({ url, materialMode, wireframe, onLoaded, onError }) {
         child.material = mat;
       }
     });
-  }, [object, materialMode, wireframe]);
+  }, [object, materialMode, wireframe, loadedTexture]);
 
   if (loading) {
     return (
@@ -221,6 +250,7 @@ function EmptyPlaceholder() {
  */
 export default function ModelViewer({
   modelUrl,
+  textureUrl = null,
   isLoading = false,
   onLoaded,
   onError,
@@ -228,8 +258,15 @@ export default function ModelViewer({
   const [wireframe, setWireframe] = useState(false);
   const [autoRotate, setAutoRotate] = useState(false);
   const [showGrid, setShowGrid] = useState(true);
-  const [materialMode, setMaterialMode] = useState('clay'); // clay, metallic, stylized, normal
+  const [materialMode, setMaterialMode] = useState(textureUrl ? 'textured' : 'clay'); // textured, clay, metallic, stylized, normal
   const controlsRef = useRef();
+
+  // If a new texture arrives, switch to textured view automatically
+  useEffect(() => {
+    if (textureUrl) {
+      setMaterialMode('textured');
+    }
+  }, [textureUrl]);
 
   const handleResetCamera = () => {
     if (controlsRef.current) {
@@ -292,6 +329,7 @@ export default function ModelViewer({
           {modelUrl ? (
             <OBJModel
               url={modelUrl}
+              textureUrl={textureUrl}
               materialMode={materialMode}
               wireframe={wireframe}
               onLoaded={onLoaded}
@@ -358,6 +396,7 @@ export default function ModelViewer({
             className="toolbar-select"
             title="Switch Shading Material"
           >
+            {textureUrl && <option value="textured">🎨 Textured PBR</option>}
             <option value="clay">Clay Studio</option>
             <option value="metallic">Chrome Metal</option>
             <option value="stylized">Stylized Purple</option>

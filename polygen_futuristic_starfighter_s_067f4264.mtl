@@ -1,0 +1,10 @@
+# PolyGen Material Library
+# Prompt: futuristic starfighter spaceship with swept wings and twin engines
+
+newmtl PolyGenDefaultMat
+Ka 0.25 0.25 0.28
+Kd 0.75 0.78 0.85
+Ks 0.40 0.40 0.45
+Ns 64.0
+d 1.0
+illum 2

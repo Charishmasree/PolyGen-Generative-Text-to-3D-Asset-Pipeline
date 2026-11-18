@@ -1,201 +1,225 @@
-# PolyGen: AI-Powered Text-to-3D Model Generation
+# PolyGen: Generative Text-to-3D Asset Pipeline
 
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688.svg?style=flat&logo=fastapi)](https://fastapi.tiangolo.com)
 [![React](https://img.shields.io/badge/Frontend-React_18-61DAFB.svg?style=flat&logo=react)](https://reactjs.org/)
 [![Three.js](https://img.shields.io/badge/3D_Engine-Three.js_/_R3F-black.svg?style=flat&logo=three.js)](https://threejs.org/)
-[![Wavefront OBJ](https://img.shields.io/badge/Export_Format-Wavefront_OBJ-orange.svg?style=flat)]()
-[![Status](https://img.shields.io/badge/Milestone-Week_1_Complete-success.svg?style=flat)]()
+[![UV Unwrapping](https://img.shields.io/badge/UV_Engine-xatlas_&_Trimesh-blueviolet.svg?style=flat)]()
+[![Texture Generation](https://img.shields.io/badge/Texture_AI-Stable_Diffusion_/_ControlNet-magenta.svg?style=flat)]()
+[![Status](https://img.shields.io/badge/Milestones-Week_1_&_Week_2_Complete-success.svg?style=flat)]()
 
-**PolyGen** is an end-to-end generative AI pipeline designed to convert natural language text prompts into interactive 3D mesh assets exported in industry-standard Wavefront OBJ format and rendered in a real-time web-based 3D viewport.
+**PolyGen** is an end-to-end generative AI pipeline designed to convert natural language text prompts into textured, UV-unwrapped 3D mesh assets exported in industry-standard Wavefront OBJ format and rendered in a real-time web-based 3D viewport.
 
-This repository contains the complete **Week 1 Implementation: Environment Setup and Text-to-3D Generation Pipeline**.
+This repository contains the complete implementation for **Week 1 (Environment Setup & Text-to-3D Generation)** and **Week 2 (Texture Generation and Automatic UV Mesh Processing)**.
 
 ---
 
-## 🎯 Week 1 Milestone Objectives
+## 🎯 Milestones & Implemented Features
 
-- [x] **Backend Infrastructure (Python + FastAPI)**:
-  - Text prompt reception, preprocessing, and input validation.
-  - Hybrid Text-to-3D generation engine supporting both:
-    1. Built-in **PolyGen Procedural & Semantic AI Engine** for instant offline generation without paid keys.
-    2. Cloud Text-to-3D API integrations (**Meshy API** and **Tripo3D API**) via optional `.env` credentials.
-  - Geometry synthesis with vertex calculations, smooth normal computations, bounding box normalization, and Wavefront `.obj` export.
-  - RESTful API endpoints for generation, model serving, history listing, and health checks.
-  - Directory traversal protection and robust error handling.
-- [x] **Frontend Studio (React + Three.js + React Three Fiber)**:
-  - Sleek modern dark-theme dashboard with prompt input, character count, and preset suggestions.
-  - Real-time 3D viewport using `@react-three/fiber` and `@react-three/drei`.
-  - Interactive camera controls: orbit rotation, smooth zoom, pan, and reset.
-  - Studio lighting rig (key light, fill light, hemisphere light, ground grid).
-  - Multi-material shading modes (Clay Studio, Chrome Metal, Stylized Purple, Normal Map, Wireframe).
-  - One-click Wavefront OBJ direct download.
-  - Loading states, error alerts, and live mesh geometry statistics (vertices, faces, dimensions).
+### Week 1: Environment Setup & Text-to-3D Generation
+- [x] **FastAPI Backend Server**: Input validation, routing, model serving, and health checks.
+- [x] **Dual 3D Engine**: Built-in Semantic Procedural AI engine (zero paid keys needed) + Cloud API hooks (Meshy, Tripo3D).
+- [x] **Geometry Pipeline**: Generates vertices, computed smooth surface normals, and exports Wavefront `.obj` files.
+- [x] **React + Three.js 3D Viewport**: OrbitControls (rotate, zoom, pan), lighting rig, turntable auto-rotation, and wireframe toggle.
+- [x] **Offline Support**: 100% offline generation with zero internet dependency via `start_offline.bat`.
+
+### Week 2: Texture Generation & Mesh Processing
+- [x] **Texture Generation Module (`backend/texture_generator.py`)**:
+  - Accepts the same text prompt used for 3D model generation (e.g. *"A rusty medieval broadsword with a glowing blue sapphire in the hilt."*).
+  - Integrates Stable Diffusion pipelines with depth-map / ControlNet conditioning.
+  - Supports multiple generation backends: Stability AI SDXL API, Hugging Face Inference API, Local PyTorch Diffusers + ControlNet (with CUDA GPU), and a prompt-guided semantic procedural PBR texture synthesizer for offline/CPU environments.
+  - Automatically renders orthographic depth maps from 3D meshes for ControlNet structure guidance.
+  - Exports crisp 1024×1024 PNG texture maps to `outputs/textures/`.
+- [x] **Mesh Processing & Automatic UV Unwrapping (`backend/mesh_processor.py`)**:
+  - Loads and validates generated OBJ meshes using `trimesh` (watertightness, degenerate faces, vertex counts, euler numbers).
+  - Automatically unwraps 3D meshes into non-overlapping 2D UV texture atlases using **`xatlas`** parameterization.
+  - Re-computes smooth vertex normals and formats face indices (`f v/vt/vn`).
+  - Automatically creates companion `.mtl` material files referencing the generated texture (`map_Kd`).
+  - Preserves original raw meshes in `outputs/models/` and saves processed assets in `outputs/processed/`.
+- [x] **Integrated End-to-End Pipeline**:
+  - `POST /api/generate-full-asset`: Orchestrates 3D mesh generation -> depth-map rendering -> texture synthesis -> UV unwrapping -> textured asset assembly in one seamless call.
+  - Interactive Web Studio displays the live textured mesh in the 3D viewport with texture map preview and one-click download buttons.
 
 ---
 
 ## 🏗️ Architecture & Pipeline Overview
 
 ```
-                          ┌───────────────────────────┐
-                          │   User Natural Prompt     │
-                          │   "low-poly wooden chair" │
-                          └─────────────┬─────────────┘
-                                        │
-                                        ▼
-                   ┌─────────────────────────────────────────┐
-                   │       PolyGen React Studio (Vite)       │
-                   │   - Prompt Input & Preset Chips         │
-                   │   - Art Style & Provider Selection      │
-                   └────────────────────┬────────────────────┘
-                                        │ HTTP POST /api/generate
-                                        ▼
-                   ┌─────────────────────────────────────────┐
-                   │         FastAPI Backend Server          │
-                   │   - Input sanitization & validation     │
-                   │   - Provider routing & fallbacks        │
-                   └────────────────────┬────────────────────┘
-                                        │
-                 ┌──────────────────────┴──────────────────────┐
-                 │                                             │
-                 ▼                                             ▼
-  ┌─────────────────────────────┐               ┌─────────────────────────────┐
-  │ Built-in Semantic AI Engine │               │   Cloud Text-to-3D APIs     │
-  │ - Keyword & intent parsing  │               │   (Optional Meshy / Tripo)  │
-  │ - Parametric mesh synthesis │               │   - Polled task pipeline    │
-  │ - Normal generation & bounds│               │   - Cloud mesh fetching     │
-  └──────────────┬──────────────┘               └──────────────┬──────────────┘
-                 │                                             │
-                 └──────────────────────┬──────────────────────┘
-                                        │
-                                        ▼
-                   ┌─────────────────────────────────────────┐
-                   │         Wavefront OBJ Exporter          │
-                   │   - Standard `v`, `vn`, `vt`, `f` lines │
-                   │   - Saved to `backend/models/*.obj`     │
-                   └────────────────────┬────────────────────┘
-                                        │
-                                        ▼
-                   ┌─────────────────────────────────────────┐
-                   │    WebGL 3D Viewport (Three.js / R3F)   │
-                   │   - OrbitControls (rotate/pan/zoom)     │
-                   │   - Dynamic Shading & Wireframe modes   │
-                   │   - Direct OBJ Download                 │
-                   └─────────────────────────────────────────┘
+                               ┌─────────────────────────────────┐
+                               │       User Natural Prompt       │
+                               │ "A rusty medieval broadsword    │
+                               │  with a glowing blue sapphire"  │
+                               └────────────────┬────────────────┘
+                                                │
+                                                ▼
+                        ┌───────────────────────────────────────────────┐
+                        │      PolyGen Web Studio (React + Three.js)    │
+                        │ - Pipeline Mode Toggle (Full Asset vs Mesh)   │
+                        │ - Real-time 3D Viewport with PBR Texture Map  │
+                        └───────────────────────┬───────────────────────┘
+                                                │ POST /api/generate-full-asset
+                                                ▼
+                        ┌───────────────────────────────────────────────┐
+                        │          FastAPI Orchestration API            │
+                        └──────────┬────────────────────────────┬───────┘
+                                   │                            │
+                                   ▼                            ▼
+                 ┌──────────────────────────────────┐ ┌──────────────────────────────────┐
+                 │ Stage 1: Text-to-3D Generator    │ │ Stage 2: ControlNet Guidance     │
+                 │ - Procedural / Cloud 3D Engine   │ │ - Orthographic depth rendering   │
+                 │ - Saves raw OBJ to:              │ │ - Saves depth guidance to:       │
+                 │   outputs/models/<id>.obj        │ │   outputs/textures/<id>_depth.png│
+                 └─────────────────┬────────────────┘ └─────────────────┬────────────────┘
+                                   │                                    │
+                                   └─────────────────┬──────────────────┘
+                                                     │
+                                                     ▼
+                                   ┌──────────────────────────────────┐
+                                   │ Stage 3: Texture Generation      │
+                                   │ - Stable Diffusion / ControlNet  │
+                                   │ - Multi-tier: Stability API / HF │
+                                   │   Local Diffusers / Semantic PBR │
+                                   │ - Saves 1024x1024 PNG to:        │
+                                   │   outputs/textures/<id>_tex.png  │
+                                   └─────────────────┬────────────────┘
+                                                     │
+                                                     ▼
+                                   ┌──────────────────────────────────┐
+                                   │ Stage 4: Mesh Processing & UVs   │
+                                   │ - Trimesh topology validation    │
+                                   │ - xatlas UV atlas parameterize   │
+                                   │ - Links texture in companion MTL │
+                                   │ - Saves textured asset to:       │
+                                   │   outputs/processed/<id>_proc.obj│
+                                   └─────────────────┬────────────────┘
+                                                     │
+                                                     ▼
+                        ┌───────────────────────────────────────────────┐
+                        │         Real-Time 3D WebGL Viewport           │
+                        │ - PBR Material with diffuse texture mapping   │
+                        │ - Direct OBJ & PNG Texture Download           │
+                        └───────────────────────────────────────────────┘
 ```
 
 ---
 
-## 📁 Repository Structure
+## 📁 Repository & Output Structure
 
 ```text
 PolyGen/
 ├── backend/
-│   ├── generate_3d.py       # Core Text-to-3D geometry synthesis & OBJ exporter
-│   ├── main.py              # FastAPI application, endpoints & CORS middleware
-│   ├── requirements.txt     # Python backend dependencies
-│   ├── test_api.py          # Automated backend test suite
-│   ├── .env.example         # Template for optional external API keys
-│   └── models/              # Storage directory for generated .obj files
+│   ├── generate_3d.py         # Week 1: 3D Mesh procedural & cloud generation
+│   ├── texture_generator.py   # Week 2: Stable Diffusion & texture generation
+│   ├── mesh_processor.py      # Week 2: Trimesh validation & xatlas UV unwrapping
+│   ├── main.py                # FastAPI REST API endpoints & static server
+│   ├── requirements.txt       # Python dependencies (trimesh, xatlas, pillow, etc.)
+│   ├── test_api.py            # Week 1 automated regression test suite
+│   ├── test_week2.py          # Week 2 automated test suite (6 test cases)
+│   └── .env.example           # Environment template for cloud API keys
 ├── frontend/
-│   ├── index.html           # HTML5 entrypoint
-│   ├── package.json         # React & Three.js dependencies
-│   ├── vite.config.js       # Vite build configuration with API reverse proxy
+│   ├── index.html             # HTML5 entrypoint
+│   ├── package.json           # React 18, Three.js, R3F dependencies
+│   ├── vite.config.js         # Vite configuration with API reverse proxy
 │   └── src/
-│       ├── main.jsx         # React application root
-│       ├── App.jsx          # Studio layout, state management & API integration
-│       ├── index.css        # Cyberpunk/dark-studio UI design system
+│       ├── main.jsx           # React mounting root
+│       ├── App.jsx            # Studio UI, pipeline mode toggle & texture preview
+│       ├── index.css          # Design system & dark cyberpunk theme
 │       └── components/
-│           └── ModelViewer.jsx  # Three.js Canvas, OrbitControls & OBJ loader
-└── README.md                # Project documentation
+│           └── ModelViewer.jsx # Three.js Canvas, OrbitControls & TextureLoader
+├── outputs/                   # Desktop Output Storage
+│   ├── models/                # Week 1 raw generated .obj models
+│   ├── textures/              # Week 2 generated 1024x1024 PNG texture maps & depth maps
+│   └── processed/             # Week 2 UV-unwrapped textured .obj and .mtl assets
+├── start_polygen.bat          # 1-Click launcher for both backend & frontend
+├── start_offline.bat          # 1-Click launcher for 100% offline mode
+├── open_outputs_folder.bat    # 1-Click Windows Explorer shortcut to outputs/
+└── README.md                  # Project documentation
 ```
 
 ---
 
-## ⚙️ Prerequisites
+## ⚙️ Installation & Setup
 
+### 1. Prerequisites
 - **Python**: Version 3.10+ (tested with Python 3.12)
 - **Node.js**: Version 18+ (tested with Node.js v24)
 - **Operating System**: Windows, macOS, or Linux
 
----
+### 2. Backend Setup
+```bash
+# Navigate to backend directory
+cd backend
 
-## 🚀 Quick Start Guide
+# Create and activate virtual environment
+python -m venv venv
 
-### Step 1: Backend Setup (Python + FastAPI)
+# Windows PowerShell:
+.\venv\Scripts\Activate.ps1
+# macOS / Linux:
+# source venv/bin/activate
 
-1. Open a terminal in the project root directory:
-   ```bash
-   cd backend
-   ```
+# Install all dependencies (including Trimesh, xatlas, Pillow, Scipy)
+pip install -r requirements.txt
+```
 
-2. Create and activate a Python virtual environment:
-   - **Windows (PowerShell)**:
-     ```powershell
-     python -m venv venv
-     .\venv\Scripts\Activate.ps1
-     ```
-   - **macOS / Linux**:
-     ```bash
-     python3 -m venv venv
-     source venv/bin/activate
-     ```
+### 3. Optional AI & GPU Credentials Setup
+Copy `.env.example` to `.env` in the `backend/` directory:
+```bash
+cp .env.example .env
+```
 
-3. Install backend dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
+| Environment Variable | Description |
+| :--- | :--- |
+| `STABILITY_API_KEY` | *(Optional)* Stability AI API key for cloud SDXL text-to-texture |
+| `HUGGINGFACE_API_KEY` | *(Optional)* HuggingFace API key for hosted Stable Diffusion |
+| `SD_WEBUI_URL` | *(Optional)* URL to local Automatic1111/ComfyUI API (e.g. `http://127.0.0.1:7860`) |
+| `MESHY_API_KEY` | *(Optional)* Meshy API key for cloud 3D generation |
+| `TRIPO_API_KEY` | *(Optional)* Tripo3D API key for cloud 3D generation |
 
-4. *(Optional)* Configure Cloud Text-to-3D API keys:
-   Copy `.env.example` to `.env` and insert your keys if you wish to use Meshy or Tripo3D:
-   ```bash
-   cp .env.example .env
-   ```
-   > **Note:** If no API key is configured, PolyGen will automatically use its built-in offline Semantic AI engine.
+> **Offline / Zero-Credential Guarantee:** If no API keys or NVIDIA CUDA GPUs are present, PolyGen will **never crash** or pretend that external models ran. It transparently utilizes its built-in semantic procedural PBR texture synthesizer and `xatlas` UV engine, with clear status reporting.
 
-5. Start the FastAPI development server:
-   ```bash
-   uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-   ```
-   The backend API will be live at `http://localhost:8000` (Interactive docs at `http://localhost:8000/docs`).
-
----
-
-### Step 2: Frontend Setup (React + Three.js)
-
-1. In a second terminal window, navigate to the frontend directory:
-   ```bash
-   cd frontend
-   ```
-
-2. Install frontend dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Start the Vite development server:
-   ```bash
-   npm run dev
-   ```
-
-4. Open your browser and navigate to:
-   ```
-   http://localhost:5173
-   ```
+### 4. Frontend Setup
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
 ---
 
-## 🔌 API Endpoint Documentation
+## 🚀 Running the Project
 
-### 1. `POST /api/generate`
-Generates a new 3D model from a user-supplied text prompt and art style.
+### Option A: Standard Development Mode (Hot Reloading)
+Double-click **[`start_polygen.bat`](./start_polygen.bat)**, or run:
+```powershell
+# Terminal 1 (Backend):
+cd backend
+.\venv\Scripts\activate
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
-**Request Headers:** `Content-Type: application/json`
+# Terminal 2 (Frontend):
+cd frontend
+npm run dev
+```
+- Web Application: **[http://localhost:5173](http://localhost:5173)**
+- Interactive API Docs: **[http://localhost:8000/docs](http://localhost:8000/docs)**
 
-**Request Body:**
+### Option B: 100% Offline Mode (No Internet Needed)
+Double-click **[`start_offline.bat`](./start_offline.bat)**:
+- Starts the local server and opens **[http://127.0.0.1:8000](http://127.0.0.1:8000)** with zero network or internet connection required.
+- All models, textures, and processed assets are saved directly to `outputs/` on your Desktop.
+
+---
+
+## 🔌 Week 2 API Documentation
+
+### 1. `POST /api/generate-full-asset`
+Complete end-to-end pipeline: Generates 3D mesh, renders depth map, synthesizes texture, automatically UV-unwraps mesh with `xatlas`, and binds texture in `.mtl`.
+
+**Request:**
 ```json
 {
-  "prompt": "a low-poly medieval broadsword with golden hilt",
-  "style": "low-poly",
+  "prompt": "A rusty medieval broadsword with a glowing blue sapphire in the hilt.",
+  "style": "realistic",
   "provider": "auto"
 }
 ```
@@ -204,161 +228,112 @@ Generates a new 3D model from a user-supplied text prompt and art style.
 ```json
 {
   "success": true,
-  "model_id": "polygen_a_low_poly_medieval_br_f085ddba",
-  "prompt": "a low-poly medieval broadsword with golden hilt",
-  "style": "low-poly",
-  "filename": "polygen_a_low_poly_medieval_br_f085ddba.obj",
-  "model_url": "/api/models/polygen_a_low_poly_medieval_br_f085ddba.obj",
-  "download_url": "/api/models/polygen_a_low_poly_medieval_br_f085ddba.obj?download=true",
-  "file_size": 15469,
-  "metadata": {
-    "vertex_count": 129,
-    "face_count": 204,
-    "dimensions": {
-      "min": [-0.275, 0.0, -0.04],
-      "max": [0.275, 2.0, 0.04],
-      "width": 0.55,
-      "height": 2.0,
-      "depth": 0.08
+  "model_id": "polygen_a_rusty_medieval_broadsw_eb67917b",
+  "prompt": "A rusty medieval broadsword with a glowing blue sapphire in the hilt.",
+  "pipeline_stages": {
+    "3d_generation": {
+      "filename": "polygen_a_rusty_medieval_broadsw_eb67917b.obj",
+      "url": "/api/models/polygen_a_rusty_medieval_broadsw_eb67917b.obj",
+      "vertex_count": 129,
+      "provider": "polygen-semantic-ai"
     },
-    "provider": "polygen-semantic-ai",
-    "generation_time_ms": 42.38
-  }
-}
-```
-
-**cURL Example:**
-```bash
-curl -X POST http://localhost:8000/api/generate \
-  -H "Content-Type: application/json" \
-  -d '{"prompt": "futuristic spaceship", "style": "low-poly"}'
-```
-
----
-
-### 2. `GET /api/models/{filename}`
-Streams the generated `.obj` model file. Used directly by Three.js `OBJLoader` or browser downloads.
-
-**Query Parameters:**
-- `download=true` *(optional)*: Sets `Content-Disposition: attachment` to trigger browser file save.
-
-**cURL Example:**
-```bash
-curl -O http://localhost:8000/api/models/polygen_a_low_poly_medieval_br_f085ddba.obj
-```
-
----
-
-### 3. `GET /api/history`
-Returns recently generated models stored on the server.
-
-**Response (200 OK):**
-```json
-{
-  "count": 5,
-  "models": [
-    {
-      "model_id": "polygen_ancient_broadsword_f085ddba",
-      "filename": "polygen_ancient_broadsword_f085ddba.obj",
-      "model_url": "/api/models/polygen_ancient_broadsword_f085ddba.obj",
-      "download_url": "/api/models/polygen_ancient_broadsword_f085ddba.obj?download=true",
-      "file_size": 15469,
-      "created_at": 1794299768.0
+    "texture_generation": {
+      "filename": "polygen_a_rusty_medieval_broadsw_eb67917b_texture.png",
+      "url": "/api/textures/polygen_a_rusty_medieval_broadsw_eb67917b_texture.png",
+      "provider": "semantic_procedural_synthesizer",
+      "is_ai_fallback": true,
+      "status_message": "Stable Diffusion API key / CUDA GPU not detected. Synthesized high-resolution semantic procedural PBR texture from prompt keywords.",
+      "depth_guidance_used": true
+    },
+    "mesh_processing": {
+      "filename": "polygen_a_rusty_medieval_broadsw_eb67917b_processed.obj",
+      "url": "/api/processed/polygen_a_rusty_medieval_broadsw_eb67917b_processed.obj",
+      "unwrapping_method": "xatlas_parameterization",
+      "processed_vertices": 226,
+      "processed_uvs": 226
     }
-  ]
-}
-```
-
----
-
-### 4. `GET /api/health`
-Health check endpoint reporting backend server status, model storage counts, and provider availability.
-
-**Response (200 OK):**
-```json
-{
-  "status": "healthy",
-  "service": "polygen-backend",
-  "models_in_store": 6,
-  "providers": {
-    "local_semantic_ai": "active",
-    "meshy_api": "not_configured (API key missing)",
-    "tripo_api": "not_configured (API key DIC missing)"
   },
-  "timestamp": 1794299326.64
+  "final_asset": {
+    "obj_filename": "polygen_a_rusty_medieval_broadsw_eb67917b_processed.obj",
+    "obj_url": "/api/processed/polygen_a_rusty_medieval_broadsw_eb67917b_processed.obj",
+    "texture_filename": "polygen_a_rusty_medieval_broadsw_eb67917b_texture.png",
+    "texture_url": "/api/textures/polygen_a_rusty_medieval_broadsw_eb67917b_texture.png",
+    "mtl_filename": "polygen_a_rusty_medieval_broadsw_eb67917b_processed.mtl",
+    "mtl_url": "/api/processed/polygen_a_rusty_medieval_broadsw_eb67917b_processed.mtl"
+  },
+  "total_pipeline_time_ms": 348.2
 }
 ```
 
----
+### 2. `POST /api/generate-texture`
+Generates a standalone 1024×1024 PNG texture map from a text description and optional mesh for depth conditioning.
 
-## 🎨 Supported Categories & Suggested Prompts
+### 3. `POST /api/process-mesh`
+Validates an existing raw OBJ mesh, computes automatic UV atlas coordinates using `xatlas`, and outputs processed files to `outputs/processed/`.
 
-PolyGen's built-in synthesis engine recognizes diverse semantic categories and generates clean manifold 3D meshes:
+### 4. `GET /api/textures/{filename}`
+Streams generated PNG texture files with caching and download support.
 
-| Category | Example Prompts | Geometric Features |
-|---|---|---|
-| **Weapons & Armor** | `"medieval broadsword"`, `"ornate battle shield"` | Pommel, wrapped hilt, crossguard, tapered blade with fuller, curved heater shield with center boss |
-| **Furniture** | `"low-poly wooden chair"`, `"dining table"` | Beveled seat, 4 tapered cylindrical legs, curved backrest with uprights and slats |
-| **Vehicles** | `"cyberpunk flying car"`, `"futuristic spaceship"` | Slanted chassis, cockpit canopy, 4 wheels/tires, swept delta wings, twin engine nacelles |
-| **Aeronautics** | `"space rocket"`, `"apollo booster"` | Cylindrical stage body, aerodynamic nosecone, 4 delta stabilizer fins, engine nozzle |
-| **Architecture** | `"cozy cottage house"`, `"medieval tower"` | Foundation walls, pitched gable roof, stone chimney, door recess |
-| **Nature** | `"pine tree"`, `"forest plant"` | Organic tapered trunk, layered 3-tier conical foliage canopy |
-| **Everyday Objects** | `"ceramic coffee mug"`, `"glazed donut"` | Cylindrical body with torus handle, wavy surface torus |
-| **Crystals & Gems** | `"faceted diamond gemstone"`, `"magic crystal"` | Multi-faceted brilliant-cut bipyramid with crown and pavilion |
-| **Arbitrary Prompts** | *"Any creative prompt"* | Parametric harmonic surface synthesis driven by prompt seed |
+### 5. `GET /api/processed/{filename}`
+Streams UV-unwrapped OBJ and MTL files for direct 3D WebGL viewing or Blender/Unity import.
 
 ---
 
-## 🖥️ 3D Viewport Controls & Features
+## 🧪 Automated Test Suite
 
-- **Interactive OrbitControls**:
-  - **Left Click + Drag**: Orbit / Rotate model in 3D space.
-  - **Right Click + Drag**: Pan camera horizontally and vertically.
-  - **Scroll Wheel**: Smooth zoom in / zoom out with clamped min/max distance.
-- **Floating Studio Toolbar**:
-  - **Rotate**: Toggle automated smooth 360° turntable rotation.
-  - **Wireframe**: Toggle geometric wireframe overlay to inspect mesh topology.
-  - **Grid**: Toggle spatial ground grid for scale reference.
-  - **Material Selector**:
-    - `Clay Studio`: Neutral matte studio shading with soft highlights.
-    - `Chrome Metal`: Highly reflective metallic PBR shading.
-    - `Stylized Purple`: High-contrast game-asset shading.
-    - `Normal Map`: Visualizes geometric surface normal vectors in RGB.
-  - **Reset**: Instantly restores default camera position and perspective.
-- **Export**: One-click download button to save the current asset as a standard `.obj` file.
-
----
-
-## 🧪 Testing
-
-Run the automated backend test suite to verify all endpoints, validation logic, and geometry generation:
+Run both test suites to verify full functionality:
 
 ```bash
 cd backend
-python test_api.py
+python test_week2.py
 ```
 
-Expected output:
+**Week 2 Test Output:**
 ```text
-========================================
- Running PolyGen Backend Test Suite
-========================================
-[PASS] 1. Health check endpoint
-[PASS] 2. Generation (chair) -> polygen_a_low_poly_wooden_chair_e437c5ac.obj (156 verts, 264 faces)
-[PASS] 3. Generation (crystal) -> polygen_futuristic_neon_cyber_cr_1c216df5.obj (18 verts)
-[PASS] 4. Blank prompt validation correctly caught (HTTP 400)
-[PASS] 5. Short prompt validation correctly caught (HTTP 400)
-[PASS] 6. Model file retrieval -> 15469 bytes
-[PASS] 7. Directory traversal defense verified
-[PASS] 8. History listing -> 5 models found
-========================================
- ALL BACKEND TESTS PASSED (8/8)!
-========================================
+===================================================================
+      PolyGen Week 2 Test Suite: Textures & UV Processing
+===================================================================
+
+[TEST 1/6] Generating Base 3D Mesh...
+ -> Generated: polygen_a_rusty_medieval_broadsw_eb67917b.obj (129 verts, 204 faces)
+ [PASS] Base 3D mesh generation verified.
+
+[TEST 2/6] Rendering ControlNet Depth Map Guidance from Mesh...
+ -> Depth map generated: polygen_a_rusty_medieval_broadsw_eb67917b_depth_test.png (512x512 grayscale)
+ [PASS] ControlNet depth-map guidance verified.
+
+[TEST 3/6] Generating Texture from Prompt...
+ -> Texture created: test_polygen_a_rusty_medieval_broadsw_eb67917b_texture.png (1024x1024 PNG)
+ -> Provider: semantic_procedural_synthesizer
+ -> Depth Guidance Used: True
+ -> Status Message: Stable Diffusion API key / CUDA GPU not detected. Synthesized high-resolution semantic procedural PBR texture from prompt keywords.
+ [PASS] Texture generation verified.
+
+[TEST 4/6] Processing Mesh & Automatic UV Unwrapping...
+ -> Unwrapped Mesh: polygen_a_rusty_medieval_broadsw_eb67917b_processed.obj
+ -> Method: xatlas_parameterization
+ -> UV Count: 226
+ -> Watertight: False
+ -> Linked Texture: True
+ [PASS] UV unwrapping and mesh processing verified.
+
+[TEST 5/6] Testing Error Handling for Missing / Invalid Inputs...
+ -> Correctly raised FileNotFoundError for missing input mesh.
+ -> Correctly raised ValueError for non-OBJ input.
+ -> Correctly raised ValueError for whitespace texture prompt.
+ [PASS] All error handling checks passed.
+
+[TEST 6/6] Validating Processed Textured Asset Compatibility...
+ -> Reloaded mesh verified: 226 vertices, 204 faces, 226 UVs
+ [PASS] Asset compatibility verified.
+
+===================================================================
+  >>> ALL WEEK 2 TESTS PASSED SUCCESSFULLY (6/6)! <<<
+===================================================================
 ```
 
 ---
 
 ## 👥 Contributors
 
-- **PolyGen Team** – Week 1: Environment Setup and Text-to-3D Generation Pipeline
-
+- **PolyGen Team** – Week 2: Texture Generation & Mesh Processing Pipeline
