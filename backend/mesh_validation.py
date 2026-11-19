@@ -208,3 +208,29 @@ if __name__ == "__main__":
     result = validate_mesh(sample_vertices, sample_faces)
     print("Mesh Validation Result:", result)
 
+
+
+
+
+
+    # Additional Week 2 Mesh Validation Checks
+    print("[ADDITIONAL TEST] Checking Mesh Geometry and Topology...")
+
+    validation_report = validate_mesh(reloaded_mesh)
+
+    assert validation_report["is_valid"] is True
+    assert validation_report["vertex_count"] > 0
+    assert validation_report["face_count"] > 0
+    assert "is_watertight" in validation_report
+    assert "is_winding_consistent" in validation_report
+    assert "degenerate_faces" in validation_report
+    assert "bounds" in validation_report
+
+    print(" -> Mesh validity:", validation_report["is_valid"])
+    print(" -> Vertex count:", validation_report["vertex_count"])
+    print(" -> Face count:", validation_report["face_count"])
+    print(" -> Watertight:", validation_report["is_watertight"])
+    print(" -> UV coordinates:", validation_report["has_existing_uvs"])
+    print(" [PASS] Additional mesh validation checks completed.\n")
+
+
