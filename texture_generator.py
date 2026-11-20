@@ -507,3 +507,109 @@ if __name__ == "__main__":
     print("Saved Texture:", res["texture_path"])
     print("Status Message:", res["status_message"])
 
+
+
+
+
+
+import os
+import uuid
+import logging
+from pathlib import Path
+
+import numpy as np
+import requests
+from PIL import Image, ImageFilter
+from dotenv import load_dotenv
+load_dotenv()
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("polygen.texture")
+ROOT = Path(__file__).resolve().parent.parent
+TEXTURES_DIR = ROOT / "outputs" / "textures"
+TEXTURES_DIR.mkdir(parents=True, exist_ok=True)
+
+def create_procedural_texture(prompt, output_path, resolution=1024):
+    """Create a simple PBR-style texture from prompt keywords."""
+    text = prompt.lower()
+    rng = np.random.default_rng()
+    materials = {
+        "wood": (145, 90, 42), "metal": (165, 170, 180),
+        "stone": (135, 135, 140), "gold": (205, 160, 45),
+        "grass": (65, 125, 55), "leather": (100, 55, 30),
+    }
+    material = next((key for key in materials if key in text), "stone")
+    base = np.array(materials[material], dtype=np.float32)
+    image = np.empty((resolution, resolution, 3), dtype=np.float32)
+    image[:] = base + rng.normal(0, 10, (resolution, resolution, 1))
+    if material == "wood":
+        grain = np.sin(np.linspace(0, 70, resolution))[None, :, None]
+        image += grain * 18
+    elif material == "metal":
+        lines = np.sin(np.linspace(0, 150, resolution))[:, None, None]
+        image += lines * 8
+    if any(word in text for word in ("rust", "rusty", "weathered")):
+        mask = rng.random((resolution, resolution, 1)) > 0.72
+        rust = np.array([165, 70, 25], dtype=np.float32)
+        image = np.where(mask, rust, image)
+
+    image = np.clip(image, 0, 255).astype(np.uint8)
+    result = Image.fromarray(image, "RGB")
+    result = result.filter(ImageFilter.GaussianBlur(0.4))
+    result.save(output_path, format="PNG")
+    return str(output_path)
+
+def generate_with_stability(prompt, output_path, api_key):
+    """Generate a texture using the Stability AI image API."""
+    import base64
+    url = ("https://api.stability.ai/v1/generation/"
+           "stable-diffusion-xl-1024-v1-0/text-to-image")
+    headers = {"Authorization": f"Bearer {api_key}",
+               "Accept": "application/json"}
+    payload = {
+        "text_prompts": [{"text": f"seamless PBR texture, {prompt}"}],
+        "width": 1024, "height": 1024, "steps": 30, "samples": 1,
+    }
+    try:
+        response = requests.post(url, headers=headers, json=payload, timeout=60)
+        response.raise_for_status()
+        encoded = response.json()["artifacts"][0]["base64"]
+        output_path.write_bytes(base64.b64decode(encoded))
+        return True
+    except (requests.RequestException, KeyError, ValueError) as error:
+        logger.warning("Stability API failed: %s", error)
+        return False
+
+def generate_texture(prompt, model_id=None, resolution=1024):
+    """Generate a texture and return metadata for the backend."""
+    prompt = prompt.strip()
+    if not prompt:
+        raise ValueError("Texture prompt cannot be empty.")
+    model_id = model_id or f"texture_{uuid.uuid4().hex[:8]}"
+    filename = f"{model_id}_texture.png"
+    output_path = TEXTURES_DIR / filename
+    api_key = os.getenv("STABILITY_API_KEY")
+
+    if api_key and generate_with_stability(prompt, output_path, api_key):
+        provider, fallback = "stability_ai", False
+    else:
+        create_procedural_texture(prompt, output_path, resolution)
+        provider, fallback = "procedural_fallback", True
+    return {
+        "success": output_path.exists(),
+        "texture_filename": filename,
+        "texture_path": str(output_path),
+        "texture_url": f"/api/textures/{filename}",
+        "width": resolution, "height": resolution,
+        "format": "PNG", "prompt": prompt,
+        "provider": provider, "is_ai_fallback": fallback,
+        "status_message": "Texture generation completed.",
+    }
+
+
+if __name__ == "__main__":
+    result = generate_texture("rusty medieval sword with gold details",
+                              model_id="week2_test")
+    print("Success:", result["success"])
+    print("Texture:", result["texture_path"])
+    print("Provider:", result["provider"])
+
