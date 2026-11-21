@@ -131,3 +131,203 @@ def run_week2_tests():
 if __name__ == "__main__":
     run_week2_tests()
 
+
+
+
+
+
+
+"""
+PolyGen - Week 2 Test Suite
+Texture Generation & Mesh Processing
+
+Tests:
+1. 3D model generation
+2. ControlNet depth map generation
+3. AI texture generation
+4. Automatic UV unwrapping
+5. Error handling
+6. Processed mesh validation
+"""
+
+import os
+import sys
+from pathlib import Path
+
+# Add backend directory to Python path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from generate_3d import generate_3d_model, MODELS_DIR
+from texture_generator import (
+    generate_texture,
+    render_depth_map_from_mesh,
+    TEXTURES_DIR
+)
+from mesh_processor import (
+    process_and_unwrap_mesh,
+    validate_mesh,
+    PROCESSED_DIR
+)
+
+import trimesh
+from PIL import Image
+
+
+def run_week2_tests():
+
+    print("=" * 65)
+    print("PolyGen Week 2 Test Suite")
+    print("Texture Generation & Mesh Processing")
+    print("=" * 65)
+
+    sample_prompt = (
+        "A rusty medieval broadsword with "
+        "a glowing blue sapphire in the hilt."
+    )
+
+    # TEST 1: Generate 3D Model
+    print("\n[TEST 1/6] Generating Base 3D Mesh...")
+
+    model_res = generate_3d_model(
+        sample_prompt,
+        style="realistic"
+    )
+
+    assert model_res["success"] is True
+
+    raw_mesh_path = model_res["file_path"]
+
+    assert Path(raw_mesh_path).exists()
+
+    print("Generated:", model_res["filename"])
+    print("[PASS] 3D model generation verified.")
+
+    # TEST 2: Generate Depth Map
+    print("\n[TEST 2/6] Generating Depth Map...")
+
+    depth_out = str(
+        TEXTURES_DIR /
+        f"{model_res['model_id']}_depth_test.png"
+    )
+
+    depth_res = render_depth_map_from_mesh(
+        raw_mesh_path,
+        output_depth_path=depth_out,
+        resolution=512
+    )
+
+    assert depth_res is not None
+    assert Path(depth_out).exists()
+
+    depth_image = Image.open(depth_out)
+
+    assert depth_image.size == (512, 512)
+
+    print("Depth map generated:", depth_image.size)
+    print("[PASS] Depth map generation verified.")
+
+    # TEST 3: Generate AI Texture
+    print("\n[TEST 3/6] Generating AI Texture...")
+
+    tex_res = generate_texture(
+        prompt=sample_prompt,
+        model_id=f"test_{model_res['model_id']}",
+        mesh_path=raw_mesh_path,
+        resolution=1024
+    )
+
+    assert tex_res["success"] is True
+    assert Path(tex_res["texture_path"]).exists()
+
+    texture_image = Image.open(tex_res["texture_path"])
+
+    assert texture_image.size == (1024, 1024)
+
+    print("Texture created:", tex_res["texture_filename"])
+    print("Provider:", tex_res["provider"])
+    print("[PASS] Texture generation verified.")
+
+    # TEST 4: Mesh Processing and UV Unwrapping
+    print("\n[TEST 4/6] Processing 3D Mesh...")
+
+    texture_relative = (
+        f"../textures/{tex_res['texture_filename']}"
+    )
+
+    proc_res = process_and_unwrap_mesh(
+        input_obj_path=raw_mesh_path,
+        texture_relative_path=texture_relative,
+        material_name="SwordMaterial"
+    )
+
+    assert proc_res["success"] is True
+
+    proc_obj_path = proc_res["processed_mesh_path"]
+
+    assert Path(proc_obj_path).exists()
+    assert Path(proc_res["mtl_path"]).exists()
+
+    assert proc_res["processed_stats"]["uv_count"] > 0
+
+    print("Processed mesh:", proc_res["filename"])
+    print("UV Count:", proc_res["processed_stats"]["uv_count"])
+    print("[PASS] Mesh processing verified.")
+
+    # TEST 5: Error Handling
+    print("\n[TEST 5/6] Testing Error Handling...")
+
+    # Missing file
+    try:
+        process_and_unwrap_mesh(
+            "non_existent_file_999.obj"
+        )
+        raise AssertionError("Expected FileNotFoundError")
+
+    except FileNotFoundError:
+        print("[PASS] Missing file handled correctly.")
+
+    # Invalid file extension
+    try:
+        process_and_unwrap_mesh(__file__)
+        raise AssertionError("Expected ValueError")
+
+    except ValueError:
+        print("[PASS] Invalid file type handled correctly.")
+
+    # Empty texture prompt
+    try:
+        generate_texture("   ")
+        raise AssertionError("Expected ValueError")
+
+    except ValueError:
+        print("[PASS] Empty prompt handled correctly.")
+
+    # TEST 6: Validate Processed Mesh
+    print("\n[TEST 6/6] Validating Processed Mesh...")
+
+    reloaded_mesh = trimesh.load(
+        proc_obj_path,
+        file_type="obj",
+        force="mesh",
+        process=False
+    )
+
+    assert len(reloaded_mesh.vertices) > 0
+    assert len(reloaded_mesh.faces) > 0
+
+    assert (
+        hasattr(reloaded_mesh.visual, "uv")
+        and len(reloaded_mesh.visual.uv) > 0
+    )
+
+    print("Vertices:", len(reloaded_mesh.vertices))
+    print("Faces:", len(reloaded_mesh.faces))
+    print("[PASS] Processed mesh validation successful.")
+
+    print("\n" + "=" * 65)
+    print("ALL WEEK 2 TESTS COMPLETED SUCCESSFULLY!")
+    print("=" * 65)
+
+
+if __name__ == "__main__":
+    run_week2_tests()
